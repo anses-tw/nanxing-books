@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>115年度圖書採購選書系統</title>
+    
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 載入 React 與 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 載入 Babel 編譯器 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 載入 SheetJS 解析引擎 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', '微軟正黑體', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 內建圖示 (SVG) ---
+        const IconBookOpen = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>;
+        const IconSearch = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+        const IconDownload = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+        const IconTrash2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+        const IconEdit = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
+        const IconAlertCircle = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+        const IconCheckCircle2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9 12l2 2 4-4"></path></svg>;
+        const IconUpload = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+        const IconDatabase = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>;
+        const IconCloud = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>;
+        const IconCloudOff = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.61 16.95A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 4.3 11.23"></path><path d="m2 2 20 20"></path><path d="M12 21H9c-3.87 0-7-3.13-7-7 0-3.32 2.31-6.14 5.39-6.84"></path></svg>;
+
+        function App() {
+            // --- Firebase 雲端資料庫狀態 ---
+            const [db, setDb] = useState(null);
+            const [authUser, setAuthUser] = useState(null);
+            const [syncStatus, setSyncStatus] = useState('connecting'); // connecting, synced, offline
+
+            // 一般狀態管理
+            const [selectedGrade, setSelectedGrade] = useState('1');
+            const [books, setBooks] = useState([]);
+            const [isFetching, setIsFetching] = useState(false);
+            const [fetchMessage, setFetchMessage] = useState('');
+            const [libraryBooks, setLibraryBooks] = useState([]);
+            const [isLibraryLoaded, setIsLibraryLoaded] = useState(false);
+            const [duplicateWarning, setDuplicateWarning] = useState('');
+            const [editingId, setEditingId] = useState(null);
+            const [formData, setFormData] = useState({
+                isbn: '', title: '', author: '', publisher: '', publishCountry: '臺灣',
+                price: '360', quantity: 1, isSet: false, hasCd: false, isTeacher: false, remarks: ''
+            });
+
+            // =====================================================================
+            // 💡 主任您好！未來要放上 GitHub Pages 時，請將您的 Firebase 設定貼在下方
+            // =====================================================================
+            const MY_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
+  authDomain: "nanxing-books.firebaseapp.com",
+  databaseURL: "https://nanxing-books-default-rtdb.firebaseio.com",
+  projectId: "nanxing-books",
+  storageBucket: "nanxing-books.firebasestorage.app",
+  messagingSenderId: "600212997764",
+  appId: "1:600212997764:web:3cd1003c29e43daddaa4d1"
+}; 
+            /* 例如：
+            const MY_FIREBASE_CONFIG = {
+                apiKey: "AIzaSyxxxx...",
+                authDomain: "nanxing-books.firebaseapp.com",
+                projectId: "nanxing-books",
+            };
+            */
+
+            // 初始化 Firebase
+            useEffect(() => {
+                const initFirebase = async () => {
+                    try {
+                        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+                        const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+                        const { getFirestore } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+
+                        // 判斷是否為預覽環境，或是使用主任您設定的金鑰
+                        let configToUse = null;
+                        if (MY_FIREBASE_CONFIG) {
+                            configToUse = MY_FIREBASE_CONFIG;
+                        } else if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                            configToUse = JSON.parse(__firebase_config);
+                        }
+
+                        if (!configToUse) {
+                            console.log("未偵測到 Firebase 設定，改為單機測試模式。");
+                            setSyncStatus('offline');
+                            return;
+                        }
+
+                        const app = initializeApp(configToUse);
+                        const auth = getAuth(app);
+                        setDb(getFirestore(app));
+
+                        // 匿名登入 (確保大家不用輸入帳號密碼也能共用資料庫)
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+
+                        onAuthStateChanged(auth, (user) => {
+                            if (user) {
+                                setAuthUser(user);
+                                setSyncStatus('synced');
+                            }
+                        });
+
+                    } catch (error) {
+                        console.error("雲端連線失敗，轉為單機模式:", error);
+                        setSyncStatus('offline');
+                    }
+                };
+                initFirebase();
+            }, []);
+
+            // 監聽雲端資料庫更新 (當有人新增書本時，畫面自動更新)
+            useEffect(() => {
+                if (syncStatus === 'offline' || !authUser || !db) return;
+
+                let unsubscribe;
+                const loadData = async () => {
+                    const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
+                    // 設定資料庫儲存路徑
+                    const booksRef = collection(db, 'artifacts', appId, 'public', 'data', 'books');
+                    
+                    unsubscribe = onSnapshot(booksRef, (snapshot) => {
+                        const loadedBooks = [];
+                        snapshot.forEach(doc => loadedBooks.push({ id: doc.id, ...doc.data() }));
+                        // 以新增時間排序
+                        loadedBooks.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        setBooks(loadedBooks);
+                    }, (error) => {
+                        console.error("讀取雲端資料錯誤", error);
+                    });
+                };
+                
+                loadData();
+                return () => { if (unsubscribe) unsubscribe(); };
+            }, [authUser, db, syncStatus]);
+
+            // 計算預算與統計
+            const currentGradeBooks = books.filter(b => b.grade === selectedGrade);
+            const totalAmount = currentGradeBooks.reduce((sum, b) => sum + (b.price * b.quantity), 0);
+            const teacherAmount = currentGradeBooks.filter(b => b.isTeacher).reduce((sum, b) => sum + (b.price * b.quantity), 0);
+            const TARGET_AMOUNT = 40000;
+            const progressPercentage = Math.min((totalAmount / TARGET_AMOUNT) * 100, 100);
+            const teacherPercentage = totalAmount === 0 ? 0 : (teacherAmount / totalAmount) * 100;
+
+            // 處理館藏 Excel 匯入
+            const handleLibraryUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    const parsedLibrary = rows.map(cols => {
+                    if (Array.isArray(cols) && cols.length >= 2) {
+                        return {
+                        title: cols[1] ? String(cols[1]).replace(/"/g, '').trim() : '',
+                        author: cols[2] ? String(cols[2]).replace(/"/g, '').trim() : '', 
+                        isbn: cols[3] ? String(cols[3]).replace(/"/g, '').replace(/-/g, '').trim() : ''
+                        };
+                    }
+                    return null;
+                    }).filter(book => book && (book.title || book.isbn));
+                    
+                    setLibraryBooks(parsedLibrary);
+                    setIsLibraryLoaded(true);
+                    alert(`成功匯入 ${parsedLibrary.length} 筆現有館藏資料！現在系統會自動檢查重複書籍。`);
+                } catch (error) {
+                    console.error(error);
+                    alert('檔案讀取失敗，請確認是否為正確的 Excel 檔案。');
+                }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            // 館藏防重複智慧比對
+            useEffect(() => {
+                if (!isLibraryLoaded) return;
+                const checkDuplicate = () => {
+                const cleanInputIsbn = formData.isbn.replace(/-/g, '').trim();
+                const inputTitle = formData.title.trim();
+                const inputAuthor = formData.author.trim();
+                
+                const normalizeStr = (str) => str ? String(str).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '').toLowerCase() : '';
+
+                const coreInputTitle = inputTitle.split(/[:：(（\-。‧・·]/)[0];
+                const cleanInputTitle = normalizeStr(coreInputTitle);
+                const coreInputAuthor = inputAuthor.replace(/[文圖繪譯著]/g, '').split(/[,，、/；;‧・·]/)[0];
+                const cleanInputAuthor = normalizeStr(coreInputAuthor);
+
+                if (!cleanInputIsbn && !cleanInputTitle) {
+                    setDuplicateWarning(''); return;
+                }
+
+                const foundBooks = libraryBooks.filter(libBook => {
+                    const matchIsbn = cleanInputIsbn && libBook.isbn && libBook.isbn.includes(cleanInputIsbn);
+                    let matchTitle = false;
+                    if (cleanInputTitle.length > 1 && libBook.title) {
+                        const libTitleClean = normalizeStr(libBook.title);
+                        matchTitle = libTitleClean.includes(cleanInputTitle) || cleanInputTitle.includes(libTitleClean);
+                    }
+                    let matchAuthor = false;
+                    if (cleanInputAuthor.length > 0 && libBook.author) {
+                        const libAuthorClean = normalizeStr(libBook.author);
+                        matchAuthor = libAuthorClean.includes(cleanInputAuthor) || cleanInputAuthor.includes(libAuthorClean);
+                    }
+                    const isAuthorConsistent = (!cleanInputAuthor || !libBook.author || matchAuthor);
+                    return matchIsbn || (matchTitle && isAuthorConsistent);
+                });
+
+                if (foundBooks.length > 0) {
+                    setDuplicateWarning(`⚠️ 注意：圖書館可能已有此書 (比對符合: ${foundBooks[0].title})，目前館藏總計 ${foundBooks.length} 本！`);
+                } else {
+                    setDuplicateWarning('');
+                }
+                };
+                checkDuplicate();
+            }, [formData.isbn, formData.title, formData.author, isLibraryLoaded, libraryBooks]);
+
+            const handleInputChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+            };
+
+            // API 查書 (ISBN)
+            const fetchBookData = async () => {
+                if (!formData.isbn) { setFetchMessage('請先輸入 ISBN 碼'); return; }
+                setIsFetching(true); setFetchMessage('查詢中...');
+                try {
+                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${formData.isbn.replace(/-/g, '').trim()}`);
+                const data = await response.json();
+                if (data.totalItems > 0) {
+                    const bookInfo = data.items[0].volumeInfo;
+                    setFormData(prev => ({
+                        ...prev, title: bookInfo.title || '', author: bookInfo.authors ? bookInfo.authors.join(', ') : '', publisher: bookInfo.publisher || '',
+                    }));
+                    setFetchMessage('帶入成功！請確認並補齊定價與數量。');
+                } else { setFetchMessage('查無此書，請手動輸入。'); }
+                } catch (error) { setFetchMessage('連線錯誤，請手動輸入。'); } 
+                finally { setIsFetching(false); setTimeout(() => setFetchMessage(''), 3000); }
+            };
+
+            // API 查書 (書名)
+            const fetchBookDataByTitle = async () => {
+                if (!formData.title) { setFetchMessage('請先輸入書名'); return; }
+                setIsFetching(true); setFetchMessage('以書名查詢最新版本中...');
+                try {
+                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(formData.title.trim())}&orderBy=newest`);
+                const data = await response.json();
+                if (data.totalItems > 0 && data.items) {
+                    let bestBookInfo = data.items[0].volumeInfo;
+                    for (let i = 0; i < Math.min(data.items.length, 5); i++) {
+                        if (data.items[i].volumeInfo.publisher && data.items[i].volumeInfo.industryIdentifiers) {
+                            bestBookInfo = data.items[i].volumeInfo; break; 
+                        }
+                    }
+                    let foundIsbn = '';
+                    if (bestBookInfo.industryIdentifiers) {
+                        const idList = bestBookInfo.industryIdentifiers;
+                        foundIsbn = (idList.find(id => id.type === 'ISBN_13') || idList.find(id => id.type === 'ISBN_10') || {}).identifier || '';
+                    }
+                    setFormData(prev => ({
+                        ...prev, isbn: foundIsbn || prev.isbn, author: bestBookInfo.authors ? bestBookInfo.authors.join(', ') : '', publisher: bestBookInfo.publisher || '',
+                    }));
+                    setFetchMessage('最新版書名帶入成功！');
+                } else { setFetchMessage('查無此書，請手動補齊。'); }
+                } catch (error) { setFetchMessage('連線錯誤，請手動輸入。'); } 
+                finally { setIsFetching(false); setTimeout(() => setFetchMessage(''), 4000); }
+            };
+
+            // 送出書籍 (新增或修改) - 支援雲端與單機雙模式
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!formData.isbn.trim() || !formData.title.trim() || !formData.author.trim() || !formData.publisher.trim() || !formData.price || !formData.quantity) {
+                    alert('ISBN、書名、作者、出版社、定價與數量皆為必填！'); return;
+                }
+
+                const bookId = editingId || Date.now().toString();
+                const newBookData = {
+                    ...formData, grade: selectedGrade, price: Number(formData.price), quantity: Number(formData.quantity), createdAt: Date.now()
+                };
+
+                if (syncStatus === 'synced' && db && authUser) {
+                    // 寫入 Firebase 雲端資料庫
+                    try {
+                        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'books', bookId), newBookData);
+                    } catch (err) {
+                        console.error("雲端存檔失敗:", err);
+                        alert("雲端存檔失敗，請確認網路連線！");
+                    }
+                } else {
+                    // 單機儲存模式
+                    if (editingId) {
+                        setBooks(prev => prev.map(b => b.id === editingId ? { ...newBookData, id: editingId } : b));
+                    } else {
+                        setBooks(prev => [...prev, { ...newBookData, id: bookId }]);
+                    }
+                }
+                
+                setEditingId(null);
+                resetForm();
+            };
+
+            // 刪除書籍 - 支援雲端與單機雙模式
+            const handleDeleteBook = async (id) => {
+                if (window.confirm('確定要刪除這本書嗎？')) {
+                    if (syncStatus === 'synced' && db && authUser) {
+                        try {
+                            const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'books', id));
+                        } catch (err) { console.error("雲端刪除失敗:", err); }
+                    } else {
+                        setBooks(prev => prev.filter(b => b.id !== id));
+                    }
+                }
+            };
+
+            const handleEditBook = (book) => {
+                setEditingId(book.id);
+                setFormData({
+                    isbn: book.isbn || '', title: book.title || '', author: book.author || '', publisher: book.publisher || '',
+                    publishCountry: book.publishCountry || '臺灣', price: book.price || '', quantity: book.quantity || 1,
+                    isSet: book.isSet || false, hasCd: book.hasCd || false, isTeacher: book.isTeacher || false, remarks: book.remarks || ''
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const resetForm = () => {
+                setFormData({ isbn: '', title: '', author: '', publisher: '', publishCountry: '臺灣', price: '360', quantity: 1, isSet: false, hasCd: false, isTeacher: false, remarks: '' });
+                setDuplicateWarning('');
+                setEditingId(null);
+            };
+
+            const exportToCSV = () => {
+                const headers = ['排序', '書名', '作者', '出版社', '出版地(國家)', 'ISBN', '採購數量', '定價(新臺幣)', '小計', '是否為套書', '是否含光碟', '是否為教師用書', '備註'];
+                const escapeCSV = (text) => text ? `"${String(text).replace(/"/g, '""')}"` : '""';
+                const forceExcelText = (text) => text ? `"=""${String(text).replace(/"/g, '""')}"""` : '""';
+
+                const rows = currentGradeBooks.map((book, index) => [
+                    index + 1, escapeCSV(book.title), escapeCSV(book.author), escapeCSV(book.publisher), escapeCSV(book.publishCountry),
+                    forceExcelText(book.isbn), book.quantity, book.price, book.price * book.quantity, book.isSet ? '是' : '否', book.hasCd ? '是' : '否', book.isTeacher ? '是' : '否', forceExcelText(book.remarks)  
+                ]);
+                rows.push(['合計', '', '', '', '', '', currentGradeBooks.reduce((sum, b) => sum + b.quantity, 0), '', totalAmount, '', '', '', '']);
+
+                const csvContent = ['\uFEFF' + headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
+                link.download = `南興國小_${selectedGrade}年級_圖書採購清單.csv`;
+                link.click();
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
+                
+                <header className="bg-blue-700 text-white shadow-md z-30 relative">
+                    <div className="py-4 px-6 max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-2">
+                            <IconBookOpen className="h-6 w-6" />
+                            <h1 className="text-xl font-bold tracking-wider">安定區南興國小｜115年度圖書採購選書系統</h1>
+                            
+                            {/* --- 雲端連線狀態指示器 --- */}
+                            {syncStatus === 'synced' && <span className="ml-2 flex items-center gap-1 bg-green-500/20 border border-green-400 text-green-100 text-xs px-2 py-1 rounded-full"><IconCloud className="w-3 h-3"/> 雲端同步中</span>}
+                            {syncStatus === 'offline' && <span className="ml-2 flex items-center gap-1 bg-amber-500/20 border border-amber-400 text-amber-100 text-xs px-2 py-1 rounded-full"><IconCloudOff className="w-3 h-3"/> 單機模式</span>}
+                            {syncStatus === 'connecting' && <span className="ml-2 flex items-center gap-1 text-slate-300 text-xs px-2 py-1">連線中...</span>}
+
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                            <input type="file" accept=".csv, .xls, .xlsx" id="library-upload" onChange={handleLibraryUpload} className="hidden" />
+                            <label htmlFor="library-upload" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer transition ${isLibraryLoaded ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-700 hover:bg-slate-600 border border-slate-500'}`}>
+                                {isLibraryLoaded ? <IconDatabase className="w-4 h-4" /> : <IconUpload className="w-4 h-4" />}
+                                {isLibraryLoaded ? '館藏已載入 (比對中)' : '匯入現有館藏 (Excel/CSV)'}
+                            </label>
+                            </div>
+                            <span className="bg-blue-800 px-3 py-1.5 rounded-full text-sm font-bold shadow-inner">目標：各年級 40,000 元</span>
+                        </div>
+                    </div>
+
+                    {/* --- 快速找書連結導覽列 (雙排設計) --- */}
+                    <div className="bg-blue-800/90 border-t border-blue-600 px-6 py-3 overflow-x-auto no-scrollbar shadow-inner">
+                        <div className="max-w-6xl mx-auto flex flex-col gap-3 text-sm whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                                <span className="font-bold text-amber-300 flex-shrink-0 w-[120px]">🔗 校內參考資源：</span>
+                                <a href="https://docs.google.com/spreadsheets/d/1Oy5HV_4P6c4DLOngKpSMdEoAvfl3V5JH/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
+                                    📊 近三年獲選書單
+                                </a>
+                                <a href="https://docs.google.com/spreadsheets/d/15Car8LxR75RJrA5tdHHnE97-L4GZ7NY5/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
+                                    📊 近兩年暢銷書單
+                                </a>
+                                <span className="text-blue-500 mx-1">|</span>
+                                <a href="https://anses-tw.github.io/nanxing-library/" target="_blank" className="bg-blue-900/50 hover:bg-amber-500 hover:text-slate-900 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🏛️ 南興館藏查詢
+                                </a>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="font-bold text-amber-300 flex-shrink-0 w-[120px]">🔗 外部找書資源：</span>
+                                <a href="https://www.books.com.tw/" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 博客來
+                                </a>
+                                <a href="https://www.eslite.com/category/16" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 誠品兒童
+                                </a>
+                                <a href="https://www.kingstone.com.tw/events/designated" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 金石堂
+                                </a>
+                                <span className="text-blue-500 mx-1">|</span>
+                                <a href="https://read.tn.edu.tw/Book/BookListTable" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🌎 臺南布可星球
+                                </a>
+                                <a href="https://book.moc.gov.tw/book/new/recommend/" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🏆 文化部優良讀物
+                                </a>
+                                <a href="https://premium.parenting.com.tw/article/5078711" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    👩‍🏫 林怡辰書單
+                                </a>
+                                <a href="https://shopping.parenting.com.tw/v2/official/SalePageCategory/505702?lang=zh-TW&sortMode=Newest" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🎒 親子天下高年級
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="max-w-6xl mx-auto mt-6 px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">請選擇填寫年級：</label>
+                        <select 
+                        value={selectedGrade}
+                        onChange={(e) => { setSelectedGrade(e.target.value); if(editingId) resetForm(); }}
+                        className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
+                        >
+                        {[1, 2, 3, 4, 5, 6].map(grade => (<option key={grade} value={grade}>{grade} 年級書單</option>))}
+                        </select>
+
+                        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 space-y-1.5">
+                        <p className="font-bold flex items-center gap-1 text-amber-900"><IconAlertCircle className="w-4 h-4"/> 選書鐵則與注意事項：</p>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>只能挑選<strong>紙本中文圖書</strong>，不可挑選電子書。</li>
+                            <li>學生用書不得低於總額 90%；教師用書/工具書不得高於總額 10%。</li>
+                            <li>書籍請寫<strong>定價(原始價格)</strong>，不要以折扣價填寫。</li>
+                            <li>如欲選為「班級共讀用書」，數量請寫 <strong>30本</strong>，且需於備註欄簡述<strong>課程教學重點或選讀理念</strong>。</li>
+                        </ul>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className={`bg-white rounded-xl shadow-sm border p-5 transition-all ${editingId ? 'border-amber-400 ring-2 ring-amber-100' : 'border-slate-200'}`}>
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                        <h2 className={`text-lg font-bold ${editingId ? 'text-amber-600' : 'text-slate-800'}`}>
+                            {editingId ? '修改書籍資料' : '新增書籍'}
+                        </h2>
+                        {editingId && (<button type="button" onClick={resetForm} className="text-sm text-slate-500 hover:text-slate-700 underline">取消修改</button>)}
+                        </div>
+                        
+                        <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">ISBN 條碼 <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                            <input type="text" name="isbn" required value={formData.isbn} onChange={handleInputChange} placeholder="例如: 9789869261456" className="flex-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"/>
+                            <button type="button" onClick={fetchBookData} disabled={isFetching} className="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm hover:bg-slate-700 transition flex items-center gap-1 disabled:opacity-50"><IconSearch className="w-4 h-4" /> 帶入</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">書名 <span className="text-red-500">*</span></label>
+                            <div className="flex gap-2">
+                            <input type="text" name="title" required value={formData.title} onChange={handleInputChange} placeholder="輸入書名後可點擊右側帶入" className="flex-1 w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"/>
+                            <button type="button" onClick={fetchBookDataByTitle} disabled={isFetching} className="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm hover:bg-slate-700 transition flex items-center gap-1 disabled:opacity-50" title="用書名搜尋並帶入作者與出版社"><IconSearch className="w-4 h-4" /> 帶入</button>
+                            </div>
+                        </div>
+
+                        {fetchMessage && (<div className={`p-2 rounded text-sm ${fetchMessage.includes('成功') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>{fetchMessage}</div>)}
+                        {duplicateWarning && (<div className="bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-lg text-sm font-medium flex items-start gap-2 animate-pulse"><IconAlertCircle className="w-5 h-5 flex-shrink-0" /><span>{duplicateWarning}</span></div>)}
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">作者 <span className="text-red-500">*</span></label>
+                            <input type="text" name="author" required value={formData.author} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg p-2 text-sm"/>
+                            </div>
+                            <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">出版社 <span className="text-red-500">*</span></label>
+                            <input type="text" name="publisher" required value={formData.publisher} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg p-2 text-sm"/>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">定價(新臺幣) <span className="text-red-500">*</span></label>
+                            <input type="number" name="price" required min="1" value={formData.price} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg p-2 text-sm"/>
+                            </div>
+                            <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">採購數量 <span className="text-red-500">*</span></label>
+                            <input type="number" name="quantity" required min="1" value={formData.quantity} onChange={handleInputChange} className="w-full border border-slate-300 rounded-lg p-2 text-sm"/>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 pt-2 border-t mt-2">
+                            <label className="flex items-center gap-1.5 text-sm text-slate-700 cursor-pointer"><input type="checkbox" name="isSet" checked={formData.isSet} onChange={handleInputChange} className="rounded text-blue-600 w-4 h-4" />套書</label>
+                            <label className="flex items-center gap-1.5 text-sm text-slate-700 cursor-pointer"><input type="checkbox" name="hasCd" checked={formData.hasCd} onChange={handleInputChange} className="rounded text-blue-600 w-4 h-4" />含光碟</label>
+                            <label className="flex items-center gap-1.5 text-sm text-slate-700 cursor-pointer"><input type="checkbox" name="isTeacher" checked={formData.isTeacher} onChange={handleInputChange} className="rounded text-rose-500 w-4 h-4 focus:ring-rose-500" /><span className={formData.isTeacher ? 'text-rose-600 font-bold' : ''}>教師用書</span></label>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">備註 <span className="text-slate-400 font-normal ml-1">(共讀用書必填理念)</span></label>
+                            <input type="text" name="remarks" value={formData.remarks} onChange={handleInputChange} placeholder="如選為共讀用書，請簡述教學重點..." className="w-full border border-slate-300 rounded-lg p-2 text-sm"/>
+                        </div>
+
+                        <button type="submit" className={`w-full text-white font-bold py-2.5 rounded-lg transition mt-4 ${editingId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {editingId ? '儲存修改' : '加入書單'}
+                        </button>
+                        </div>
+                    </form>
+                    </div>
+
+                    <div className="lg:col-span-2 flex flex-col gap-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div className="flex justify-between items-end mb-2">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">{selectedGrade} 年級預算進度</h2>
+                            <p className="text-sm text-slate-500 mt-1">目前共 {currentGradeBooks.length} 筆，合計數量 {currentGradeBooks.reduce((sum, b) => sum + b.quantity, 0)} 本</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-3xl font-black text-blue-600">{totalAmount.toLocaleString()}</span>
+                            <span className="text-slate-500 ml-1">/ 40,000 元</span>
+                        </div>
+                        </div>
+
+                        <div className="w-full bg-slate-200 rounded-full h-3 mb-4 overflow-hidden flex">
+                        <div className="bg-blue-500 h-3 transition-all duration-500" style={{ width: `${progressPercentage}%` }}></div>
+                        </div>
+
+                        <div className={`p-3 rounded-lg border ${teacherPercentage > 10 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} flex items-start gap-2`}>
+                        {teacherPercentage > 10 ? <IconAlertCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" /> : <IconCheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />}
+                        <div>
+                            <p className={`text-sm font-bold ${teacherPercentage > 10 ? 'text-rose-700' : 'text-emerald-700'}`}>教師用書/工具書佔比：{teacherPercentage.toFixed(1)}% ({teacherAmount.toLocaleString()} 元)</p>
+                            <p className={`text-xs mt-0.5 ${teacherPercentage > 10 ? 'text-rose-600' : 'text-emerald-600'}`}>{teacherPercentage > 10 ? '⚠️ 警告：已超過總額 10% 規定上限，請調整書單！' : '符合規定（不得超過 10%）'}</p>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden relative">
+                        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                        <h2 className="font-bold text-slate-800">{selectedGrade} 年級已選書單</h2>
+                        <button onClick={exportToCSV} disabled={currentGradeBooks.length === 0} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <IconDownload className="w-4 h-4" /> 匯出 {selectedGrade} 年級 CSV
+                        </button>
+                        </div>
+                        
+                        <div className="overflow-x-auto flex-1 p-0">
+                        {currentGradeBooks.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                            <IconBookOpen className="w-12 h-12 mb-3 opacity-20" />
+                            <p>尚無資料，請從左側新增書籍</p>
+                            </div>
+                        ) : (
+                            <table className="w-full text-sm text-left whitespace-nowrap">
+                            <thead className="text-xs text-slate-600 bg-slate-100 uppercase sticky top-0 shadow-sm z-10">
+                                <tr>
+                                <th className="px-4 py-3">項次</th><th className="px-4 py-3">書名</th><th className="px-4 py-3">作者</th>
+                                <th className="px-4 py-3">定價</th><th className="px-4 py-3">數量</th><th className="px-4 py-3">小計</th>
+                                <th className="px-4 py-3">備註</th><th className="px-4 py-3 text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                                {currentGradeBooks.map((book, index) => (
+                                <tr key={book.id} className={`hover:bg-slate-50 ${editingId === book.id ? 'bg-amber-50' : ''}`}>
+                                    <td className="px-4 py-3 text-slate-500">{index + 1}</td>
+                                    <td className="px-4 py-3 font-medium text-slate-800 max-w-[180px] truncate" title={book.title}>
+                                    {book.title}{book.isbn && <span className="block text-xs text-slate-400 font-normal mt-0.5">ISBN: {book.isbn}</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 max-w-[100px] truncate" title={book.author}>{book.author}</td>
+                                    <td className="px-4 py-3 text-right">{book.price}</td><td className="px-4 py-3 text-center">{book.quantity}</td>
+                                    <td className="px-4 py-3 text-right font-bold text-blue-600">{(book.price * book.quantity).toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-slate-500 max-w-[150px] truncate" title={book.remarks}>
+                                        <div className="flex flex-col gap-1">
+                                            <span>{book.remarks}</span>
+                                            <div className="flex gap-1 flex-wrap">
+                                                {book.isTeacher && <span className="bg-rose-100 text-rose-700 text-[10px] px-1.5 py-0.5 rounded">教</span>}
+                                                {book.isSet && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">套</span>}
+                                                {book.hasCd && <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded">碟</span>}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                    <div className="flex items-center justify-center gap-3">
+                                        <button onClick={() => handleEditBook(book)} className={`transition ${editingId === book.id ? 'text-amber-600' : 'text-slate-400 hover:text-amber-500'}`} title="編輯"><IconEdit className="w-4 h-4" /></button>
+                                        <button onClick={() => handleDeleteBook(book.id)} className="text-slate-400 hover:text-red-500 transition" title="刪除"><IconTrash2 className="w-4 h-4" /></button>
+                                    </div>
+                                    </td>
+                                </tr>
+                                ))}
+                            </tbody>
+                            </table>
+                        )}
+                        </div>
+                    </div>
+                    </div>
+                </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
