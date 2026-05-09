@@ -67,24 +67,17 @@
             // 💡 主任您好！未來要放上 GitHub Pages 時，請將您的 Firebase 設定貼在下方
             // =====================================================================
             const MY_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
+apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
   authDomain: "nanxing-books.firebaseapp.com",
   databaseURL: "https://nanxing-books-default-rtdb.firebaseio.com",
   projectId: "nanxing-books",
   storageBucket: "nanxing-books.firebasestorage.app",
   messagingSenderId: "600212997764",
   appId: "1:600212997764:web:3cd1003c29e43daddaa4d1"
-}; 
+            }; 
             /* 例如：
             const MY_FIREBASE_CONFIG = {
                 apiKey: "AIzaSyxxxx...",
-                authDomain: "nanxing-books.firebaseapp.com",
-                projectId: "nanxing-books",
-            };
-            */
-
-            // 初始化 Firebase
-            useEffect(() => {
                 const initFirebase = async () => {
                     try {
                         const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
