@@ -64,24 +64,17 @@
             });
 
             // =====================================================================
-            // 💡 主任您好！未來要放上 GitHub Pages 時，請將您的 Firebase 設定貼在下方
+            // 🌟 這裡已經安全替換為主任您的真實 Firebase 金鑰！
             // =====================================================================
             const MY_FIREBASE_CONFIG = {
-apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
-  authDomain: "nanxing-books.firebaseapp.com",
-  databaseURL: "https://nanxing-books-default-rtdb.firebaseio.com",
-  projectId: "nanxing-books",
-  storageBucket: "nanxing-books.firebasestorage.app",
-  messagingSenderId: "600212997764",
-  appId: "1:600212997764:web:3cd1003c29e43daddaa4d1"
-}; 
-            /* 例如：
-            const MY_FIREBASE_CONFIG = {
-                apiKey: "AIzaSyxxxx...",
+                apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
                 authDomain: "nanxing-books.firebaseapp.com",
+                databaseURL: "https://nanxing-books-default-rtdb.firebaseio.com",
                 projectId: "nanxing-books",
-            };
-            */
+                storageBucket: "nanxing-books.firebasestorage.app",
+                messagingSenderId: "600212997764",
+                appId: "1:600212997764:web:3cd1003c29e43daddaa4d1"
+            }; 
 
             // 初始化 Firebase
             useEffect(() => {
@@ -91,7 +84,7 @@ apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
                         const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
                         const { getFirestore } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
 
-                        // 判斷是否為預覽環境，或是使用主任您設定的金鑰
+                        // 使用金鑰
                         let configToUse = null;
                         if (MY_FIREBASE_CONFIG) {
                             configToUse = MY_FIREBASE_CONFIG;
