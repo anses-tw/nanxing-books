@@ -141,7 +141,7 @@
             const teacherAmount = currentGradeBooks.filter(b => b.isTeacher).reduce((sum, b) => sum + (b.price * b.quantity), 0);
             const TARGET_AMOUNT = 40000;
             const progressPercentage = Math.min((totalAmount / TARGET_AMOUNT) * 100, 100);
-            const teacherPercentage = totalAmount === 0 ? 0 : (teacherAmount / totalAmount) * 100;
+            const teacherPercentage = (teacherAmount / TARGET_AMOUNT) * 100;
 
             const handleLibraryUpload = (e) => {
                 const file = e.target.files[0];
@@ -427,29 +427,12 @@
                     <div className="bg-blue-800/90 border-t border-blue-600 px-6 py-3 overflow-x-auto no-scrollbar shadow-inner">
                         <div className="max-w-6xl mx-auto flex flex-col gap-3 text-sm whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                                <span className="font-bold text-amber-300 flex-shrink-0 w-[120px]">🔗 校內參考資源：</span>
+                                <span className="font-bold text-amber-300 flex-shrink-0 w-[140px]">🔗 推薦書單參考資源：</span>
                                 <a href="https://docs.google.com/spreadsheets/d/1Oy5HV_4P6c4DLOngKpSMdEoAvfl3V5JH/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
                                     📊 近三年獲選書單
                                 </a>
                                 <a href="https://docs.google.com/spreadsheets/d/15Car8LxR75RJrA5tdHHnE97-L4GZ7NY5/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
                                     📊 近兩年暢銷書單
-                                </a>
-                                <span className="text-blue-500 mx-1">|</span>
-                                <a href="https://anses-tw.github.io/nanxing-library/" target="_blank" className="bg-blue-900/50 hover:bg-amber-500 hover:text-slate-900 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
-                                    🏛️ 南興館藏查詢
-                                </a>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <span className="font-bold text-amber-300 flex-shrink-0 w-[120px]">🔗 外部找書資源：</span>
-                                <a href="https://www.books.com.tw/" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
-                                    🛒 博客來
-                                </a>
-                                <a href="https://www.eslite.com/category/16" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
-                                    🛒 誠品兒童
-                                </a>
-                                <a href="https://www.kingstone.com.tw/events/designated" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
-                                    🛒 金石堂
                                 </a>
                                 <span className="text-blue-500 mx-1">|</span>
                                 <a href="https://read.tn.edu.tw/Book/BookListTable" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
@@ -463,6 +446,26 @@
                                 </a>
                                 <a href="https://shopping.parenting.com.tw/v2/official/SalePageCategory/505702?lang=zh-TW&sortMode=Newest" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
                                     🎒 親子天下高年級
+                                </a>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <span className="font-bold text-amber-300 flex-shrink-0 w-[140px]">🔗 查找書目參考資源：</span>
+                                <a href="https://anses-tw.github.io/nanxing-library/" target="_blank" className="bg-blue-900/50 hover:bg-amber-500 hover:text-slate-900 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🏛️ 南興館藏查詢
+                                </a>
+                                <a href="https://isbn.ncl.edu.tw/NEW_ISBNNet/index.php" target="_blank" className="bg-blue-900/50 hover:bg-amber-500 hover:text-slate-900 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🏛️ 國家圖書館ISBN
+                                </a>
+                                <span className="text-blue-500 mx-1">|</span>
+                                <a href="https://www.books.com.tw/" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 博客來
+                                </a>
+                                <a href="https://www.eslite.com/category/16" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 誠品兒童
+                                </a>
+                                <a href="https://www.kingstone.com.tw/events/designated" target="_blank" className="bg-blue-900/50 hover:bg-blue-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
+                                    🛒 金石堂
                                 </a>
                             </div>
                         </div>
