@@ -23,6 +23,19 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <!-- 🌟 終極修復：將 Firebase 模組載入移出 Babel 翻譯區，完美解決 require 錯誤 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        
+        // 將載入的 Firebase 工具綁定到瀏覽器全域環境，供下方的 React 系統呼叫
+        window.FirebaseModule = {
+            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+            getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc
+        };
+    </script>
 </head>
 <body>
     <div id="root"></div>
@@ -64,7 +77,7 @@
             });
 
             // =====================================================================
-            // 🌟 這裡已經安全替換為主任您的真實 Firebase 金鑰！
+            // ✅ 主任您專屬的 Firebase 金鑰 (已安全配置)
             // =====================================================================
             const MY_FIREBASE_CONFIG = {
                 apiKey: "AIzaSyDwaPMtR90VKF_Q54FjMv7Ax3ecS7xRWC0",
@@ -79,21 +92,17 @@
             // 初始化 Firebase
             useEffect(() => {
                 const initFirebase = async () => {
+                    // 等待原生的 module 載入完成
+                    if (!window.FirebaseModule) {
+                        setTimeout(initFirebase, 50);
+                        return;
+                    }
+
                     try {
-                        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
-                        const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
-                        const { getFirestore } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+                        const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.FirebaseModule;
 
-                        // 使用金鑰
-                        let configToUse = null;
-                        if (MY_FIREBASE_CONFIG) {
-                            configToUse = MY_FIREBASE_CONFIG;
-                        } else if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                            configToUse = JSON.parse(__firebase_config);
-                        }
-
+                        let configToUse = MY_FIREBASE_CONFIG;
                         if (!configToUse) {
-                            console.log("未偵測到 Firebase 設定，改為單機測試模式。");
                             setSyncStatus('offline');
                             return;
                         }
@@ -102,12 +111,8 @@
                         const auth = getAuth(app);
                         setDb(getFirestore(app));
 
-                        // 匿名登入 (確保大家不用輸入帳號密碼也能共用資料庫)
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        // 匿名登入
+                        await signInAnonymously(auth);
 
                         onAuthStateChanged(auth, (user) => {
                             if (user) {
@@ -124,21 +129,19 @@
                 initFirebase();
             }, []);
 
-            // 監聽雲端資料庫更新 (當有人新增書本時，畫面自動更新)
+            // 監聽雲端資料庫更新
             useEffect(() => {
-                if (syncStatus === 'offline' || !authUser || !db) return;
+                if (syncStatus === 'offline' || !authUser || !db || !window.FirebaseModule) return;
 
                 let unsubscribe;
-                const loadData = async () => {
-                    const { collection, onSnapshot } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
-                    // 設定資料庫儲存路徑
+                const loadData = () => {
+                    const { collection, onSnapshot } = window.FirebaseModule;
+                    const appId = 'nanxing-books';
                     const booksRef = collection(db, 'artifacts', appId, 'public', 'data', 'books');
                     
                     unsubscribe = onSnapshot(booksRef, (snapshot) => {
                         const loadedBooks = [];
                         snapshot.forEach(doc => loadedBooks.push({ id: doc.id, ...doc.data() }));
-                        // 以新增時間排序
                         loadedBooks.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
                         setBooks(loadedBooks);
                     }, (error) => {
@@ -289,7 +292,7 @@
                 finally { setIsFetching(false); setTimeout(() => setFetchMessage(''), 4000); }
             };
 
-            // 送出書籍 (新增或修改) - 支援雲端與單機雙模式
+            // 送出書籍 (新增或修改)
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 if (!formData.isbn.trim() || !formData.title.trim() || !formData.author.trim() || !formData.publisher.trim() || !formData.price || !formData.quantity) {
@@ -301,18 +304,16 @@
                     ...formData, grade: selectedGrade, price: Number(formData.price), quantity: Number(formData.quantity), createdAt: Date.now()
                 };
 
-                if (syncStatus === 'synced' && db && authUser) {
-                    // 寫入 Firebase 雲端資料庫
+                if (syncStatus === 'synced' && db && authUser && window.FirebaseModule) {
                     try {
-                        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
+                        const { doc, setDoc } = window.FirebaseModule;
+                        const appId = 'nanxing-books';
                         await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'books', bookId), newBookData);
                     } catch (err) {
                         console.error("雲端存檔失敗:", err);
                         alert("雲端存檔失敗，請確認網路連線！");
                     }
                 } else {
-                    // 單機儲存模式
                     if (editingId) {
                         setBooks(prev => prev.map(b => b.id === editingId ? { ...newBookData, id: editingId } : b));
                     } else {
@@ -324,13 +325,13 @@
                 resetForm();
             };
 
-            // 刪除書籍 - 支援雲端與單機雙模式
+            // 刪除書籍
             const handleDeleteBook = async (id) => {
                 if (window.confirm('確定要刪除這本書嗎？')) {
-                    if (syncStatus === 'synced' && db && authUser) {
+                    if (syncStatus === 'synced' && db && authUser && window.FirebaseModule) {
                         try {
-                            const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'nanxing-books';
+                            const { doc, deleteDoc } = window.FirebaseModule;
+                            const appId = 'nanxing-books';
                             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'books', id));
                         } catch (err) { console.error("雲端刪除失敗:", err); }
                     } else {
