@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>115南興圖書採購選書系統</title>
+    <title>115年度南興圖書採購選書系統</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -113,11 +113,10 @@
                 initFirebase();
             }, []);
 
-            // 🚀 新增：自動載入 GitHub 上的館藏檔案 (library.xlsx)
+            // 🚀 自動載入 GitHub 上的館藏檔案 (library.xlsx)
             useEffect(() => {
                 const loadAutoLibrary = async () => {
                     try {
-                        // 系統會在背景悄悄嘗試抓取同一個網址下的 library.xlsx
                         const response = await fetch('./library.xlsx');
                         if (!response.ok) {
                             console.log('尚未偵測到 library.xlsx 檔案，維持手動上傳模式。');
@@ -150,7 +149,6 @@
                     }
                 };
                 
-                // 執行自動載入
                 loadAutoLibrary();
             }, []);
 
@@ -177,14 +175,15 @@
                 return () => { if (unsubscribe) unsubscribe(); };
             }, [authUser, db, syncStatus]);
 
+            // 🎯 計算預算與統計 (智慧判斷 4萬 或 9萬)
+            const TARGET_AMOUNT = selectedGrade === '本土文化' ? 90000 : 40000;
+            
             const currentGradeBooks = books.filter(b => b.grade === selectedGrade);
             const totalAmount = currentGradeBooks.reduce((sum, b) => sum + (b.price * b.quantity), 0);
             const teacherAmount = currentGradeBooks.filter(b => b.isTeacher).reduce((sum, b) => sum + (b.price * b.quantity), 0);
-            const TARGET_AMOUNT = 40000;
             const progressPercentage = Math.min((totalAmount / TARGET_AMOUNT) * 100, 100);
             const teacherPercentage = (teacherAmount / TARGET_AMOUNT) * 100;
 
-            // 保留手動匯入功能 (當作備用，或供主任臨時測試用)
             const handleLibraryUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -431,9 +430,14 @@
                 const csvContent = ['\uFEFF' + headers.join(','), ...rows.map(row => row.join(','))].join('\n');
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
-                link.download = `南興國小_${selectedGrade}年級_圖書採購清單.csv`;
+                
+                const titleGrade = selectedGrade === '本土文化' ? '本土文化' : `${selectedGrade}年級`;
+                link.download = `南興國小_${titleGrade}_圖書採購清單.csv`;
                 link.click();
             };
+
+            // 輔助函式：用來顯示畫面上的標題文字
+            const displayGradeTitle = selectedGrade === '本土文化' ? '本土文化相關' : `${selectedGrade} 年級`;
 
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-12">
@@ -452,13 +456,12 @@
                         <div className="flex items-center gap-3">
                             <div className="relative">
                             <input type="file" accept=".csv, .xls, .xlsx" id="library-upload" onChange={handleLibraryUpload} className="hidden" />
-                            {/* 根據是否已自動載入，切換按鈕的樣式與文字 */}
                             <label htmlFor="library-upload" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer transition ${isLibraryLoaded ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-700 hover:bg-slate-600 border border-slate-500'}`}>
                                 {isLibraryLoaded ? <IconCheckCircle2 className="w-4 h-4" /> : <IconUpload className="w-4 h-4" />}
                                 {isLibraryLoaded ? '✅ 館藏已自動載入' : '手動匯入館藏檔'}
                             </label>
                             </div>
-                            <span className="bg-blue-800 px-3 py-1.5 rounded-full text-sm font-bold shadow-inner">目標：各年級 40,000 元</span>
+                            <span className="bg-blue-800 px-3 py-1.5 rounded-full text-sm font-bold shadow-inner">總目標：各年級 4萬 / 本土 9萬</span>
                         </div>
                     </div>
 
@@ -466,11 +469,13 @@
                         <div className="max-w-6xl mx-auto flex flex-col gap-3 text-sm whitespace-nowrap">
                             <div className="flex items-center gap-3">
                                 <span className="font-bold text-amber-300 flex-shrink-0 w-[140px]">🔗 推薦書單參考資源：</span>
-                                <a href="https://docs.google.com/spreadsheets/d/1Oy5HV_4P6c4DLOngKpSMdEoAvfl3V5JH/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
-                                    📊 近三年獲選書單
+                                {/* 👇 主任：請將下方 href 替換為您的「近三年獲獎/暢銷書單」雲端連結 👇 */}
+                                <a href="https://docs.google.com/spreadsheets/d/1dOapOYlHeAQ6AjwycwbWUfYcd_TGsoOl/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
+                                    📊 近三年獲獎/暢銷書單
                                 </a>
-                                <a href="https://docs.google.com/spreadsheets/d/15Car8LxR75RJrA5tdHHnE97-L4GZ7NY5/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
-                                    📊 近兩年暢銷書單
+                                {/* 👇 主任：請將下方 href 替換為您的「圖書教師推薦書單」雲端連結 👇 */}
+                                <a href="https://docs.google.com/spreadsheets/d/1fjqFjHyxSwEDJQRh8EqBv2wux-oZoyKc/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
+                                    📊 圖書教師推薦書單
                                 </a>
                                 <span className="text-blue-500 mx-1">|</span>
                                 <a href="https://read.tn.edu.tw/Book/BookListTable" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
@@ -513,13 +518,20 @@
                 <main className="max-w-6xl mx-auto mt-6 px-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">請選擇填寫年級：</label>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">請選擇填寫群組：</label>
                         <select 
                         value={selectedGrade}
                         onChange={(e) => { setSelectedGrade(e.target.value); if(editingId) resetForm(); }}
                         className="w-full border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-bold"
                         >
-                        {[1, 2, 3, 4, 5, 6].map(grade => (<option key={grade} value={grade}>{grade} 年級書單</option>))}
+                            <option value="1">1 年級書單</option>
+                            <option value="2">2 年級書單</option>
+                            <option value="3">3 年級書單</option>
+                            <option value="4">4 年級書單</option>
+                            <option value="5">5 年級書單</option>
+                            <option value="6">6 年級書單</option>
+                            {/* 🌟 新增的本土文化分類 */}
+                            <option value="本土文化">本土文化相關書籍 (9萬元)</option>
                         </select>
 
                         <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 space-y-1.5">
@@ -605,12 +617,12 @@
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                         <div className="flex justify-between items-end mb-2">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">{selectedGrade} 年級預算進度</h2>
+                            <h2 className="text-xl font-bold text-slate-800">{displayGradeTitle}預算進度</h2>
                             <p className="text-sm text-slate-500 mt-1">目前共 {currentGradeBooks.length} 筆，合計數量 {currentGradeBooks.reduce((sum, b) => sum + b.quantity, 0)} 本</p>
                         </div>
                         <div className="text-right">
                             <span className="text-3xl font-black text-blue-600">{totalAmount.toLocaleString()}</span>
-                            <span className="text-slate-500 ml-1">/ 40,000 元</span>
+                            <span className="text-slate-500 ml-1">/ {TARGET_AMOUNT.toLocaleString()} 元</span>
                         </div>
                         </div>
 
@@ -629,9 +641,9 @@
 
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden relative">
                         <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                        <h2 className="font-bold text-slate-800">{selectedGrade} 年級已選書單</h2>
+                        <h2 className="font-bold text-slate-800">{displayGradeTitle}已選書單</h2>
                         <button onClick={exportToCSV} disabled={currentGradeBooks.length === 0} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <IconDownload className="w-4 h-4" /> 匯出 {selectedGrade} 年級 CSV
+                            <IconDownload className="w-4 h-4" /> 匯出 {displayGradeTitle} CSV
                         </button>
                         </div>
                         
