@@ -279,7 +279,7 @@
                         if (response.status === 429) {
                             setFetchMessage('⚠️ Google 查書系統流量管制 (429)，請手動輸入。');
                         } else {
-                            setFetchMessage(`伺服器連線錯誤(${response.status})，請手動輸入。`);
+                            setFetchMessage(`伺服器連線錯誤(${response.status})，請手手動輸入。`);
                         }
                         return;
                     }
@@ -469,13 +469,15 @@
                         <div className="max-w-6xl mx-auto flex flex-col gap-3 text-sm whitespace-nowrap">
                             <div className="flex items-center gap-3">
                                 <span className="font-bold text-amber-300 flex-shrink-0 w-[140px]">🔗 推薦書單參考資源：</span>
-                                {/* 👇 主任：請將下方 href 替換為您的「近三年獲獎/暢銷書單」雲端連結 👇 */}
                                 <a href="https://docs.google.com/spreadsheets/d/1dOapOYlHeAQ6AjwycwbWUfYcd_TGsoOl/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
                                     📊 近三年獲獎/暢銷書單
                                 </a>
-                                {/* 👇 主任：請將下方 href 替換為您的「圖書教師推薦書單」雲端連結 👇 */}
                                 <a href="https://docs.google.com/spreadsheets/d/1fjqFjHyxSwEDJQRh8EqBv2wux-oZoyKc/edit?usp=sharing&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
                                     📊 圖書教師推薦書單
+                                </a>
+                                {/* 👇 主任：請將下方 href 替換為您的「本土文化推薦書目」雲端連結 👇 */}
+                                <a href="【https://docs.google.com/spreadsheets/d/170wrfMIa07HCimTCEYVFZMlOwtE3FUcl/edit?usp=drive_link&ouid=116947677296785827740&rtpof=true&sd=true" target="_blank" className="bg-purple-900/50 hover:bg-purple-500 hover:text-white text-white px-3 py-1.5 rounded-full border border-purple-400/50 transition duration-200" title="點擊查看主任提供的參考書單">
+                                    📊 本土文化推薦書目
                                 </a>
                                 <span className="text-blue-500 mx-1">|</span>
                                 <a href="https://read.tn.edu.tw/Book/BookListTable" target="_blank" className="bg-blue-900/50 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-full border border-blue-600/50 transition duration-200">
